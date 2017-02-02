@@ -73,7 +73,7 @@ while (1)
 %     piccont = piccont + 1;
 %     frame   = readFrame();
 %     [joint_data] = textread(strcat(pathname,foldername(piccont+2).name),'%s','headerlines',4);
-tic();
+% tic();
     msgImg = receive(sub_img);
     frame = readImage(msgImg);
     msgStr = receive(sub_str);
@@ -160,6 +160,7 @@ tic();
 %    61.6880
 %    61.6795
     end
+    tic();
         predictNewLocationsOfTracks();    
 
         [assignments, unassignedTracks, unassignedDetections] = ...
@@ -168,6 +169,7 @@ tic();
         updateUnassignedTracks();    
         deleteLostTracks();    
         createNewTracks();
+    one_loop_time=toc
         displayTrackingResults();
 %     one_loop_time=toc
 %     total_time=[total_time;one_loop_time];
@@ -571,8 +573,10 @@ end
             score = unassignedScores(i);
             
             % Create a Kalman filter object.
+%             kalmanFilter = configureKalmanFilter('ConstantVelocity', ...
+%                 centroid, [2, 1], [5, 5], 100);
             kalmanFilter = configureKalmanFilter('ConstantVelocity', ...
-                centroid, [2, 1], [5, 5], 100);
+                centroid, [2, 1], [5, 5], 10);
             
             % Create a new track.
             newTrack = struct(...
