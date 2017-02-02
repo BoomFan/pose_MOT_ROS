@@ -23,6 +23,7 @@
 % below.
 
 function Kalman_tracker_with_2dpose_estimation_ROS()
+
     sub_img = rossubscriber('/pose_estimate/image');
     sub_str = rossubscriber('/pose_estimate/str');
     pub = rospublisher('/pose_track/image','sensor_msgs/Image');
@@ -81,9 +82,9 @@ tic();
     joint_data = char(strsplit(msgStr.Data));
     [rows, ~]=size(joint_data);
     num_of_people = (rows-2)/3;
-    centroids = [];
-    bboxes = [];
-    scores = [];
+    centroids = zeros(0,2);
+    bboxes = zeros(0,4);
+    scores = zeros(0,1);
     if (rows ~= 3)
         for j=1:num_of_people
 %             pedes_data=joint_data{j*3+1};
@@ -111,7 +112,15 @@ tic();
     %     {7,  "LWrist"}, {8,  "RHip"}, {9,  "RKnee"}, {10, "RAnkle"}, {11, "LHip"}, {12, "LKnee"}, {13, "LAnkle"},
     %     {14, "REye"}, {15, "LEye"}, {16, "REar"}, {17, "LEar"}, {18, "Bkg"}},
             centroids = [centroids;(xmin_pixel+xmax_pixel)/2,(ymin_pixel+ymax_pixel)/2;];
-            scores = [scores;pedes_data(6)*100];
+            
+            existed_scores = [];
+            for k=1:18
+                if pedes_data(k*3)~=0
+                    existed_scores=[existed_scores,pedes_data(k*3)];
+                end
+            end
+            
+            scores = [scores;mean(existed_scores)*100];
         end
     
 
@@ -150,17 +159,16 @@ tic();
 %    72.7113
 %    61.6880
 %    61.6795
+    end
         predictNewLocationsOfTracks();    
 
         [assignments, unassignedTracks, unassignedDetections] = ...
             detectionToTrackAssignment();
-
         updateAssignedTracks();    
         updateUnassignedTracks();    
         deleteLostTracks();    
         createNewTracks();
-%         displayTrackingResults();
-    end
+        displayTrackingResults();
 %     one_loop_time=toc
 %     total_time=[total_time;one_loop_time];
 %     mean_time= mean(total_time)
@@ -626,7 +634,9 @@ end
                 end
             end
         end
-        imshow(frame);
+%         imshow(frame);
+        writeImage(track_img,frame)
+        send(pub,track_img)
         
 %         frame = insertShape(frame, 'Rectangle', option.ROI * displayRatio, ...
 %                                 'Color', [255, 0, 0], 'LineWidth', 3);
